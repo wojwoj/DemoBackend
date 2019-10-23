@@ -3,8 +3,10 @@ package com.demo.backend;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,8 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @SpringBootApplication
 public class BackendApplication {
@@ -29,13 +31,14 @@ public class BackendApplication {
     @RequestMapping("api")
     public static class RocketController {
 
-        private List<Rocket> rockets = new ArrayList<>();
+        @Autowired
+        private MongoTemplate mongoTemplate;
 
         @GetMapping
         @ResponseBody
         public List<Rocket> get() {
             log.info("Getting all rockets");
-            return rockets;
+            return mongoTemplate.findAll(Rocket.class);
         }
 
         @PutMapping
@@ -43,17 +46,18 @@ public class BackendApplication {
         public Rocket put() throws UnknownHostException {
             log.info("Building new rocket");
             Rocket rocket = Rocket.builder()
+                    .id(UUID.randomUUID().toString())
                     .host(InetAddress.getLocalHost().getHostName())
                     .timestamp(LocalDateTime.now())
                     .build();
-            rockets.add(rocket);
-            return rocket;
+            return mongoTemplate.save(rocket);
         }
     }
 
     @Data
     @Builder
     public static class Rocket {
+        private String id;
         private String host;
         private LocalDateTime timestamp;
     }
